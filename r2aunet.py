@@ -1,0 +1,96 @@
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Conv2DTranspose, concatenate
+from .blocks import res_conv_block
+from .attention import Attention_mechanism, attention_block
+
+def r2aunet(input_size=(128, 128, 3)):
+    inputs = Input(input_size)
+
+    conv1 = res_conv_block(inputs, 3, 64, 0.1, batch_norm=True)
+    bn1 = BatchNormalization(axis=3)(conv1)
+    bn1 = Activation("relu")(bn1)
+    conv1 = res_conv_block(bn1, 3, 64, 0.1, batch_norm=True)
+    conv1, c_1 = Attention_mechanism(conv1)
+    bn1 = BatchNormalization(axis=3)(c_1)
+    bn1 = Activation("relu")(bn1)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(bn1)
+
+    conv2 = res_conv_block(pool1, 3, 128, 0.1, batch_norm=True)
+    bn2 = BatchNormalization(axis=3)(conv2)
+    bn2 = Activation("relu")(bn2)
+    conv2 = res_conv_block(bn2, 3, 128, 0.1, batch_norm=True)
+    conv2, c_2 = Attention_mechanism(conv2)
+    bn2 = BatchNormalization(axis=3)(c_2)
+    bn2 = Activation("relu")(bn2)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(bn2)
+
+    conv3 = res_conv_block(pool2, 3, 256, 0.1, batch_norm=True)
+    bn3 = BatchNormalization(axis=3)(conv3)
+    bn3 = Activation("relu")(bn3)
+    conv3 = res_conv_block(bn3, 3, 256, 0.1, batch_norm=True)
+    conv3, c_3 = Attention_mechanism(conv3)
+    bn3 = BatchNormalization(axis=3)(c_3)
+    bn3 = Activation("relu")(bn3)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(bn3)
+
+    conv4 = res_conv_block(pool3, 3, 512, 0.1, batch_norm=True)
+    bn4 = BatchNormalization(axis=3)(conv4)
+    bn4 = Activation("relu")(bn4)
+    conv4 = res_conv_block(bn4, 3, 512, 0.1, batch_norm=True)
+    conv4, c_4 = Attention_mechanism(conv4)
+    bn4 = BatchNormalization(axis=3)(c_4)
+    bn4 = Activation("relu")(bn4)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(bn4)
+
+    conv5 = res_conv_block(pool4, 3, 1024, 0.1, batch_norm=True)
+    bn5 = BatchNormalization(axis=3)(conv5)
+    bn5 = Activation("relu")(bn5)
+    conv5 = res_conv_block(bn5, 3, 1024, 0.1, batch_norm=True)
+    bn5 = BatchNormalization(axis=3)(conv5)
+    bn5 = Activation("relu")(bn5)
+
+    
+    up6 = Conv2DTranspose(512, kernel_size=(2, 2), strides=(2, 2), padding="same")(bn5)
+    up6 = BatchNormalization(axis=3)(up6)
+    up6 = attention_block(up6, conv4, 512)
+    print(up6.shape)
+    up6 = concatenate([up6, conv4], axis=3)
+    conv6 = res_conv_block(up6, 3, 512, 0.1, batch_norm=True)
+    bn6 = Activation("relu")(conv6)
+    conv6 = res_conv_block(bn6, 3, 512, 0.1, batch_norm=True)
+    bn6 = BatchNormalization(axis=3)(conv6)
+    bn6 = Activation("relu")(bn6)
+
+    up7 = Conv2DTranspose(256, kernel_size=(2, 2), strides=(2, 2), padding="same")(bn6)
+    up7 = BatchNormalization(axis=3)(up7)
+    up7 = attention_block(up7, conv3, 256)
+    up7 = concatenate([up7, conv3], axis=3)
+    conv7 = res_conv_block(up7, 3, 256, 0.1, batch_norm=True)
+    bn7 = Activation("relu")(conv7)
+    conv7 = res_conv_block(bn7, 3, 256, 0.1, batch_norm=True)
+    bn7 = BatchNormalization(axis=3)(conv7)
+    bn7 = Activation("relu")(bn7)
+
+    up8 = Conv2DTranspose(128, kernel_size=(2, 2), strides=(2, 2), padding="same")(bn7)
+    up8 = BatchNormalization(axis=3)(up8)
+    up7 = attention_block(up8, conv2, 128)
+    up8 = concatenate([up8, conv2], axis=3)
+    conv8 = res_conv_block(up8, 3, 128, 0.1, batch_norm=True)
+    bn8 = Activation("relu")(conv8)
+    conv8 = res_conv_block(bn8, 3, 128, 0.1, batch_norm=True)
+    bn8 = BatchNormalization(axis=3)(conv8)
+    bn8 = Activation("relu")(bn8)
+
+    up9 = Conv2DTranspose(64, kernel_size=(2, 2), strides=(2, 2), padding="same")(bn8)
+    up9 = BatchNormalization(axis=3)(up9)
+    up9 = attention_block(up9, conv1, 64)
+    up9 = concatenate([up9, conv1], axis=3)
+    conv9 = res_conv_block(up9, 3, 64, 0.1, batch_norm=True)
+    bn9 = Activation("relu")(conv9)
+    conv9 = res_conv_block(bn9, 3, 64, 0.1, batch_norm=True)
+    bn9 = BatchNormalization(axis=3)(conv9)
+    bn9 = Activation("relu")(bn9)
+
+    conv10 = Conv2D(filters=1, kernel_size=(1, 1), activation="sigmoid")(bn9)
+
+    return Model(inputs=[inputs], outputs=[conv10])
