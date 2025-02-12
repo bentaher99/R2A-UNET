@@ -25,3 +25,13 @@ from conventional approaches. It has demonstrated advanced capabilities in medic
 
 ## Predictions
 ![image](https://github.com/user-attachments/assets/6616ceda-6f8d-448c-b86a-cf0a993b0858)
+
+## Citation 
+@article{bentaher2025r2a,
+  title={R2A-UNET: double attention mechanisms with residual blocks for enhanced MRI image segmentation},
+  author={Bentaher, Noura and Lafraxo, Samira and Kabbadj, Younes and Ben Salah, Mohamed and El Ansari, Mohamed and Wakrim, Soukaina},
+  journal={Multimedia Tools and Applications},
+  pages={1--31},
+  year={2025},
+  publisher={Springer}
+}
